@@ -34,8 +34,8 @@ pub trait CastFromIndex<T: ?Sized> {}
 
 impl<T, U, V> IndexCast<T, U> for Index<T, V>
 where
-    U: 'static,
-    V: CastFromIndex<U> + 'static,
+    U: CastFromIndex<V> + 'static,
+    V: 'static,
 {
     fn cast(self) -> Index<T, U> {
         Index::new(self.index)
