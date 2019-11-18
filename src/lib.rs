@@ -16,12 +16,29 @@ pub struct Index<T, U: ?Sized + Any> {
     _marker: PhantomData<*const (T, U)>,
 }
 
-impl<T, U: Any + ?Sized> Index<T, U> {
-    pub fn new(index: ga::Index) -> Self {
+impl<T, U: ?Sized + Any> Index<T, U> {
+    fn new(index: ga::Index) -> Self {
         Self {
             index,
             _marker: PhantomData,
         }
+    }
+}
+
+pub trait IndexCast<T, U: ?Sized + Any> {
+    fn cast(self) -> Index<T, U>;
+}
+
+#[doc(hidden)]
+pub trait CastFromIndex<T: ?Sized> {}
+
+impl<T, U, V> IndexCast<T, U> for Index<T, V>
+where
+    U: 'static,
+    V: CastFromIndex<U> + 'static,
+{
+    fn cast(self) -> Index<T, U> {
+        Index::new(self.index)
     }
 }
 
@@ -52,25 +69,14 @@ impl<T> AnyArena<T> {
 #[macro_export]
 macro_rules! any_trait {
     ($trait:path) => {
-        impl<T, U> From<$crate::Index<T, U>> for $crate::Index<T, dyn $trait>
-        where
-            U: $trait + Sized + 'static,
-        {
-            fn from(idx: $crate::Index<T, U>) -> $crate::Index<T, dyn $trait> {
-                $crate::Index::new(idx.index)
-            }
-        }
+        impl<U> $crate::CastFromIndex<U> for dyn $trait where U: $trait + Sized + 'static {}
     };
 }
 
 #[macro_export]
 macro_rules! any_super {
     ($sub:path : $super:path) => {
-        impl<T> From<$crate::Index<T, dyn $sub>> for $crate::Index<T, dyn $super> {
-            fn from(idx: $crate::Index<T, dyn $sub>) -> $crate::Index<T, dyn $super> {
-                $crate::Index::new(idx.index)
-            }
-        }
+        impl $crate::CastFromIndex<dyn $sub> for dyn $super {}
 
         #[allow(dead_code)]
         fn upcast_test<T: $sub>(t: T) -> impl $super {
