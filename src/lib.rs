@@ -49,16 +49,15 @@ impl<T> AnyArena<T> {
     }
 }
 
-// FIXME redo as derive macro
 #[macro_export]
 macro_rules! any_trait {
-    ($super:path) => {
-        impl<T, U> From<Index<T, U>> for Index<T, dyn $super>
+    ($trait:path) => {
+        impl<T, U> From<$crate::Index<T, U>> for $crate::Index<T, dyn $trait>
         where
-            U: Superr + Sized + 'static,
+            U: $trait + Sized + 'static,
         {
-            fn from(idx: Index<T, U>) -> Index<T, dyn $super> {
-                Index::new(idx.index)
+            fn from(idx: $crate::Index<T, U>) -> $crate::Index<T, dyn $trait> {
+                $crate::Index::new(idx.index)
             }
         }
     };
@@ -66,10 +65,28 @@ macro_rules! any_trait {
 
 #[macro_export]
 macro_rules! any_super {
-    ($sub:path, $super:path) => {
+    ($sub:path : $super:path) => {
+        impl<T> From<$crate::Index<T, dyn $sub>> for $crate::Index<T, dyn $super> {
+            fn from(idx: $crate::Index<T, dyn $sub>) -> $crate::Index<T, dyn $super> {
+                $crate::Index::new(idx.index)
+            }
+        }
+
         #[allow(dead_code)]
         fn upcast_test<T: $sub>(t: T) -> impl $super {
             t
         }
     };
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    trait Super {}
+    trait Sub: Super {}
+
+    any_trait!(Super);
+    any_trait!(Sub);
+    any_super!(Sub: Super);
 }
