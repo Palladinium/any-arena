@@ -100,7 +100,6 @@ macro_rules! any_arena {
 
     (impl $trait:ident for $type:path) => {
         impl $crate::CastFromIndex<$type> for dyn $trait {}
-        impl $crate::CastFromIndex<dyn $trait> for $type {}
 
         traitcast!(impl $trait for $type);
     };
@@ -132,8 +131,8 @@ mod test {
     impl Sub for Bar {}
 
     any_arena!(struct Foo);
-    any_arena!(impl Sub for Foo);
     any_arena!(impl Super for Foo);
+    any_arena!(impl Sub for Foo);
     any_arena!(struct Bar: Sub, Super);
     any_arena!(trait Sub: Super);
 
@@ -143,7 +142,12 @@ mod test {
 
         let foo1: Index<(), Foo> = arena.insert((), Foo);
         let foo1_sub: Index<(), dyn Sub> = foo1.cast();
-        let foo1_sub_super: Index<(), dyn Super> = foo1_sub.cast();
-        let foo1_super: Index<(), dyn Super> = foo1.cast();
+        let _foo1_sub_super: Index<(), dyn Super> = foo1_sub.cast();
+        let _foo1_super: Index<(), dyn Super> = foo1.cast();
+
+        let bar1: Index<(), Bar> = arena.insert((), Bar);
+        let bar1_sub: Index<(), dyn Sub> = bar1.cast();
+        let _bar1_sub_super: Index<(), dyn Super> = bar1_sub.cast();
+        let _bar1_super: Index<(), dyn Super> = bar1.cast();
     }
 }
